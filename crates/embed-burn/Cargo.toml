@@ -8,6 +8,10 @@ authors.workspace = true
 [dependencies]
 embed-core.workspace = true
 anyhow.workspace = true
-# TODO(phase-0): add the real Burn stack to implement the forward pass:
-#   burn (ndarray backend for desktop CPU), plus model import via burn-import
-#   (ONNX) or a hand-built BERT; tokenizers for shared tokenization.
+burn = { version = "0.21", features = ["ndarray"] }
+burn-store = "0.21"
+tokenizers = "0.21"
+hf-hub = "0.4"
+
+[build-dependencies]
+burn-import = "0.21"
