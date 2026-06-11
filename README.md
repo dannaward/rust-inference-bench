@@ -77,4 +77,5 @@ cargo test
   to min cosine **1.000000**.
 - **Phase 1 (CPU latency + throughput): done** — see [REPORT.md](REPORT.md).
   Recommendation: **Candle** for the desktop embedding workload.
-- Phase 2 (GPU) and secondary metrics (cold start, RSS, binary size) not yet run.
+- **Secondary metrics: done** — Candle also wins cold start, RSS, binary size.
+- **Phase 2 (GPU): done** — Candle Metal beats Burn wgpu by 4–7.8× (`REPORT.md`).

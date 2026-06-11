@@ -134,19 +134,20 @@ def main():
     thr_ymax = max(max(r["candle_sps"]["median"], r["burn_sps"]["median"]) for r in thr) * 1.2
 
     import os
-    os.makedirs("results/plots", exist_ok=True)
-    open("results/plots/latency.svg", "w").write(
+    outdir = sys.argv[2] if len(sys.argv) > 2 else "results/plots"
+    os.makedirs(outdir, exist_ok=True)
+    open(f"{outdir}/latency.svg", "w").write(
         grouped_bars(lat, "seq_label", ("candle_ms", "burn_ms"), None, lat_ymax,
                      "p50 latency (ms)", f"Latency (lower is better) — {sub}")
     )
-    open("results/plots/throughput.svg", "w").write(
+    open(f"{outdir}/throughput.svg", "w").write(
         line_chart(thr, "batch", ("candle_sps", "burn_sps"), thr_ymax,
                    "sentences / sec", f"Throughput (higher is better) — {sub}")
     )
-    open("results/plots/speedup.svg", "w").write(
+    open(f"{outdir}/speedup.svg", "w").write(
         speedup_bars(lat, thr, f"Candle speedup vs Burn (faded = tie) — {sub}")
     )
-    print(f"plotted from {path} -> results/plots/{{latency,throughput,speedup}}.svg")
+    print(f"plotted from {path} -> {outdir}/{{latency,throughput,speedup}}.svg")
 
 
 if __name__ == "__main__":

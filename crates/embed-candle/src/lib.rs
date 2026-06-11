@@ -26,13 +26,23 @@ pub struct CandleEngine {
 }
 
 impl CandleEngine {
-    /// Load weights + tokenizer. `model_dir` is currently unused: weights are
-    /// fetched (and cached) from the HF Hub at the pinned revision so the
-    /// benchmark is self-contained.
-    pub fn load(_model_dir: &str) -> Result<Self> {
+    /// Load on the CPU backend (the desktop baseline).
+    pub fn load(model_dir: &str) -> Result<Self> {
+        Self::load_on(Device::Cpu, "candle-cpu", model_dir)
+    }
+
+    /// Load on the Metal (GPU) backend. Phase 2.
+    #[cfg(feature = "metal")]
+    pub fn load_metal(model_dir: &str) -> Result<Self> {
+        Self::load_on(Device::new_metal(0)?, "candle-metal", model_dir)
+    }
+
+    /// Load weights + tokenizer onto the given device. `model_dir` is currently
+    /// unused: weights are fetched (and cached) from the HF Hub at the pinned
+    /// revision so the benchmark is self-contained.
+    fn load_on(device: Device, name: &str, _model_dir: &str) -> Result<Self> {
         use hf_hub::{api::sync::Api, Repo, RepoType};
 
-        let device = Device::Cpu;
         let repo = Api::new()?.repo(Repo::with_revision(
             MODEL_ID.to_string(),
             RepoType::Model,
@@ -62,7 +72,7 @@ impl CandleEngine {
         let model = BertModel::load(vb, &config).context("load BERT")?;
 
         Ok(Self {
-            name: "candle-cpu".to_string(),
+            name: name.to_string(),
             model,
             tokenizer,
             device,

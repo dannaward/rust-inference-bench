@@ -46,6 +46,29 @@ Median over 7 fresh-process runs (cold start, peak RSS); stripped release binary
 Candle starts faster, uses ~18% less memory, and ships a smaller binary — all
 favorable for a desktop app. Build time is a wash (dominated by shared deps).
 
+## Phase 2 — GPU (Candle Metal vs Burn wgpu)
+
+Same harness, GPU backends (Apple M4 GPU). Both measure with host read-back, so
+timings include full GPU execution + sync.
+
+| Scenario | Candle Metal | Burn wgpu | Candle speedup |
+|---|---|---|---|
+| Latency, short | **2.17 ms** [0.01] | 16.41 ms [0.27] | 7.55× |
+| Latency, medium | **2.52 ms** [0.02] | 16.27 ms [0.60] | 6.50× |
+| Latency, long | **4.11 ms** [0.09] | 17.18 ms [0.36] | 4.19× |
+| Throughput, batch 8 | **1391/s** [188] | 179/s [4] | 7.77× |
+| Throughput, batch 32 | **1373/s** [63] | 214/s [12] | 6.43× |
+| Throughput, batch 64 | **1345/s** [62] | 218/s [5] | 6.19× |
+
+![GPU latency](results/plots/gpu/latency.svg)
+![GPU throughput](results/plots/gpu/throughput.svg)
+
+**Candle Metal dominates by 4–7.8×.** Its throughput (~1390/s) is ~7× its own CPU
+result — a real win for desktop bulk indexing. Burn wgpu is surprisingly slow
+(even slower than Burn on CPU for latency): wgpu's per-dispatch overhead dominates
+for a small model like MiniLM. Burn's wgpu value is **portability** (it *reaches*
+iOS/Android/Vulkan GPUs), not raw desktop-Metal speed.
+
 ## How to read this (methodology)
 
 An unpinned laptop drifts run-to-run by more than 5% (Apple Silicon P/E-core
@@ -68,9 +91,14 @@ scenarios above are distinguishable.
 ## Caveats / revisit triggers
 
 - **Desktop only.** The Flutter (FFI) layer is a framework-agnostic constant and
-  does not change this ranking. Mobile is out of scope and *could* invert it
-  (Candle is CPU-only on iOS; Burn reaches the GPU via wgpu).
-- **CPU single-thread baseline.** Multi-thread / GPU (Metal vs wgpu) is Phase 2.
-- Re-evaluate Burn if **on-device training/fine-tuning** or **iOS GPU** enter scope.
+  does not change this ranking. On desktop GPU (Metal), Candle widens its lead
+  (Phase 2). Mobile is out of scope: there the trade-off is *availability* — Candle
+  is CPU-only on iOS, while Burn's wgpu *reaches* mobile GPUs (though, per Phase 2,
+  wgpu is not fast on desktop — its merit is portability, not raw speed).
+- **CPU single-thread baseline** for Phase 1; Phase 2 adds GPU.
+- Re-evaluate Burn if **on-device training/fine-tuning** or **iOS/Android GPU
+  reach** become hard requirements.
 
-Reproduce: `scripts/fetch-model.sh && RAYON_NUM_THREADS=1 cargo run --release -p runner --bin bench && python3 scripts/plot.py`
+Reproduce:
+- CPU: `scripts/fetch-model.sh && RAYON_NUM_THREADS=1 cargo run --release -p runner --bin bench cpu && python3 scripts/plot.py`
+- GPU: `cargo run --release -p runner --bin bench --features gpu -- gpu && python3 scripts/plot.py results/gpu-*.json results/plots/gpu`

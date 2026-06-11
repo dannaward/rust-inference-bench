@@ -5,6 +5,9 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 
+[features]
+wgpu = ["burn/wgpu"]
+
 [dependencies]
 embed-core.workspace = true
 anyhow.workspace = true

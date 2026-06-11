@@ -20,6 +20,8 @@ use std::time::Instant;
 
 use anyhow::Result;
 use embed_burn::BurnEngine;
+#[cfg(feature = "gpu")]
+use embed_burn::BurnWgpuEngine;
 use embed_candle::CandleEngine;
 use embed_core::InferenceEngine;
 use serde::Serialize;
@@ -30,14 +32,14 @@ const LATENCY_SAMPLES: usize = 80;
 const THROUGHPUT_REPS: usize = 10;
 const BATCH_SIZES: &[usize] = &[1, 8, 16, 32, 64];
 
-const CANDLE: &str = "candle-cpu";
-const BURN: &str = "burn-ndarray";
 const CANDLE_VERSION: &str = "0.9";
 const BURN_VERSION: &str = "0.21";
 
 #[derive(Serialize)]
 struct Report {
     timestamp: String,
+    mode: String,
+    engines: [String; 2],
     environment: Environment,
     config: Config,
     latency: Vec<LatencyRec>,
@@ -98,7 +100,9 @@ struct ThroughputRec {
 }
 
 fn main() -> Result<()> {
-    let (candle, burn) = load_engines()?;
+    let mode = std::env::args().nth(1).unwrap_or_else(|| "cpu".to_string());
+    let (cname, candle, bname, burn) = load_engines(&mode)?;
+    eprintln!("mode={mode}: {cname} vs {bname}");
 
     let inputs = [
         ("short", "Dark brown iris."),
@@ -127,17 +131,19 @@ fn main() -> Result<()> {
         let candle_first = trial % 2 == 0;
 
         for (i, (_label, text)) in inputs.iter().enumerate() {
-            let (c, b) = measure_pair(candle_first, || latency_once(&candle, text), || {
-                latency_once(&burn, text)
-            })?;
+            let (c, b) = measure_pair(
+                candle_first,
+                || latency_once(candle.as_ref(), text),
+                || latency_once(burn.as_ref(), text),
+            )?;
             lat[i][0].push(c);
             lat[i][1].push(b);
         }
         for (i, &batch) in BATCH_SIZES.iter().enumerate() {
             let (c, b) = measure_pair(
                 candle_first,
-                || throughput_once(&candle, batch, &corpus),
-                || throughput_once(&burn, batch, &corpus),
+                || throughput_once(candle.as_ref(), batch, &corpus),
+                || throughput_once(burn.as_ref(), batch, &corpus),
             )?;
             thr[i][0].push(c);
             thr[i][1].push(b);
@@ -150,7 +156,7 @@ fn main() -> Result<()> {
         .map(|(i, (label, text))| {
             let speedup: Vec<f64> = zip_ratio(&lat[i][1], &lat[i][0]); // burn/candle
             let s = agg(speedup);
-            let (dist, faster) = decide(&s);
+            let (dist, faster) = decide(&s, &cname, &bname);
             LatencyRec {
                 seq_label: label.to_string(),
                 approx_tokens: text.split_whitespace().count(),
@@ -169,7 +175,7 @@ fn main() -> Result<()> {
         .map(|(i, &batch)| {
             let speedup: Vec<f64> = zip_ratio(&thr[i][0], &thr[i][1]); // candle/burn
             let s = agg(speedup);
-            let (dist, faster) = decide(&s);
+            let (dist, faster) = decide(&s, &cname, &bname);
             ThroughputRec {
                 batch,
                 candle_sps: agg(thr[i][0].clone()),
@@ -185,6 +191,8 @@ fn main() -> Result<()> {
 
     let report = Report {
         timestamp: cmd("date", &["-u", "+%Y-%m-%dT%H:%M:%SZ"]).unwrap_or_default(),
+        mode: mode.clone(),
+        engines: [cname.clone(), bname.clone()],
         environment: capture_env(),
         config: Config {
             trials: TRIALS,
@@ -199,7 +207,7 @@ fn main() -> Result<()> {
     std::fs::create_dir_all("results")?;
     let stamp = cmd("date", &["-u", "+%Y%m%dT%H%M%SZ"]).unwrap_or_else(|| "run".to_string());
     let host = cmd("hostname", &["-s"]).unwrap_or_else(|| "host".to_string());
-    let path = format!("results/{stamp}-{host}.json");
+    let path = format!("results/{mode}-{stamp}-{host}.json");
     std::fs::write(&path, serde_json::to_string_pretty(&report)?)?;
     eprintln!("\nwrote {path}");
     Ok(())
@@ -274,11 +282,12 @@ fn agg(mut v: Vec<f64>) -> Agg {
 }
 
 /// Distinguishable when the speedup IQR excludes 1.0 (effect > spread).
-fn decide(speedup: &Agg) -> (bool, String) {
+/// Speedup ratio is defined so >1 favors the candle-side engine.
+fn decide(speedup: &Agg, candle_name: &str, burn_name: &str) -> (bool, String) {
     if speedup.p25 > 1.0 {
-        (true, CANDLE.to_string())
+        (true, candle_name.to_string())
     } else if speedup.p75 < 1.0 {
-        (true, BURN.to_string())
+        (true, burn_name.to_string())
     } else {
         (false, "tie".to_string())
     }
@@ -327,13 +336,42 @@ fn print_summary(latency: &[LatencyRec], throughput: &[ThroughputRec]) {
     }
 }
 
-fn load_engines() -> Result<(CandleEngine, BurnEngine)> {
-    let model_dir = "data/models/all-MiniLM-L6-v2";
-    let candle = CandleEngine::load(model_dir)?;
-    let burn = BurnEngine::load(model_dir)?;
+type Engines = (String, Box<dyn InferenceEngine>, String, Box<dyn InferenceEngine>);
+
+fn load_engines(mode: &str) -> Result<Engines> {
+    let dir = "data/models/all-MiniLM-L6-v2";
+    let (cname, candle, bname, burn): Engines = match mode {
+        "gpu" => {
+            #[cfg(feature = "gpu")]
+            {
+                let c = CandleEngine::load_metal(dir)?;
+                let b = BurnWgpuEngine::load_wgpu(dir)?;
+                (
+                    c.name().to_string(),
+                    Box::new(c) as Box<dyn InferenceEngine>,
+                    b.name().to_string(),
+                    Box::new(b) as Box<dyn InferenceEngine>,
+                )
+            }
+            #[cfg(not(feature = "gpu"))]
+            {
+                anyhow::bail!("rebuild with `--features gpu` to run GPU mode");
+            }
+        }
+        _ => {
+            let c = CandleEngine::load(dir)?;
+            let b = BurnEngine::load(dir)?;
+            (
+                c.name().to_string(),
+                Box::new(c) as Box<dyn InferenceEngine>,
+                b.name().to_string(),
+                Box::new(b) as Box<dyn InferenceEngine>,
+            )
+        }
+    };
     candle.embed("probe")?;
     burn.embed("probe")?;
-    Ok((candle, burn))
+    Ok((cname, candle, bname, burn))
 }
 
 fn capture_env() -> Environment {
