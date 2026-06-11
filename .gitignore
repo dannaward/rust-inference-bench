@@ -1,0 +1,14 @@
+# Rust build artifacts
+/target
+**/*.rs.bk
+
+# Large model assets -- fetch locally, never commit
+/data/models/
+*.safetensors
+*.onnx
+*.gguf
+
+# Keep Cargo.lock committed for reproducible benchmarks (do NOT ignore it).
+
+# OS noise
+.DS_Store

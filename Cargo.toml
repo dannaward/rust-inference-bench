@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/embed-core",
+    "crates/embed-candle",
+    "crates/embed-burn",
+    "runner",
+]
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+authors = ["Danna"]
+repository = "https://github.com/dannaward/candle-vs-burn-bench"
+
+[workspace.dependencies]
+anyhow = "1"
+embed-core = { path = "crates/embed-core" }
+embed-candle = { path = "crates/embed-candle" }
+embed-burn = { path = "crates/embed-burn" }
