@@ -73,6 +73,8 @@ cargo test
 
 ## Status
 
-Scaffold complete and compiling. `embed` is not yet implemented in either engine
-(Phase 0 is next): both `load()` succeed but `embed()` returns an error, so the
-parity runner reports "need >=2 working engines" and the benches are no-ops.
+- **Phase 0 (parity): done** — Candle (safetensors) and Burn (ONNX import) agree
+  to min cosine **1.000000**.
+- **Phase 1 (CPU latency + throughput): done** — see [REPORT.md](REPORT.md).
+  Recommendation: **Candle** for the desktop embedding workload.
+- Phase 2 (GPU) and secondary metrics (cold start, RSS, binary size) not yet run.
