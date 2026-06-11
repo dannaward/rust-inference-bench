@@ -2,7 +2,8 @@
 
 **Recommendation: use Candle for the NAHPU desktop embedding workload.**
 Candle is faster for interactive search (single-query latency on short/medium
-text) and for bulk indexing (throughput at every batch size). Burn is marginally
+text) and for bulk indexing (throughput at every batch size), and it is lighter
+on every footprint metric (cold start, memory, binary size). Burn is marginally
 faster only on long inputs. Revisit if scope changes (see caveats).
 
 ## Environment
@@ -29,6 +30,21 @@ faster only on long inputs. Revisit if scope changes (see caveats).
 ![Latency](results/plots/latency.svg)
 ![Throughput](results/plots/throughput.svg)
 ![Speedup](results/plots/speedup.svg)
+
+## Secondary metrics (footprint)
+
+Median over 7 fresh-process runs (cold start, peak RSS); stripped release binary
+(code only — model weights are external for both engines); full-clean build time.
+
+| Metric | Candle | Burn | Winner |
+|---|---|---|---|
+| Cold start (load + first embed) | **23.5 ms** | 36.8 ms | Candle |
+| Peak RSS | **194 MB** | 236 MB | Candle |
+| Binary size (stripped) | **7.3 MB** | 9.4 MB | Candle |
+| Clean build time | 85.1 s | 84.7 s | ~tie |
+
+Candle starts faster, uses ~18% less memory, and ships a smaller binary — all
+favorable for a desktop app. Build time is a wash (dominated by shared deps).
 
 ## How to read this (methodology)
 
