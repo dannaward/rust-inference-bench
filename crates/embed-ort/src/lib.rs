@@ -88,14 +88,16 @@ impl OrtEngine {
     /// Load on the DirectML execution provider — GPU acceleration for **Intel,
     /// AMD, and NVIDIA** GPUs on Windows via DirectX 12. This is the EP that fills
     /// the Intel-iGPU / AMD gap Candle has no backend for (worklog 06/08).
-    /// Windows-only; build on Windows with `--features directml`. DirectML also
-    /// requires sequential execution + no memory pattern — set on the session
-    /// builder here. See GUIDE-cross-platform.md.
+    /// Windows-only; build on Windows with `--features directml`. DirectML needs
+    /// memory pattern disabled (set below) and sequential execution — the latter
+    /// is already ORT's default (we never enable parallel execution), so it's not
+    /// re-set here. See GUIDE-cross-platform.md.
     #[cfg(feature = "directml")]
     pub fn load_directml(model_dir: &str) -> Result<Self> {
         use ort::execution_providers::DirectMLExecutionProvider;
         Self::load_with("ort-directml", model_dir, |b| {
-            // DirectML is incompatible with parallel exec + memory pattern.
+            // DirectML is incompatible with memory pattern (and parallel exec,
+            // which is off by default).
             b.with_memory_pattern(false)?
                 .with_execution_providers([DirectMLExecutionProvider::default()
                     .with_device_id(0)

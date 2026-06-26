@@ -395,8 +395,11 @@ fn load_engines(mode: &str) -> Result<Vec<EngineHandle>> {
         "ep" => {
             // ORT-only cross-platform EP matrix (worklog 08): an ort-cpu baseline
             // plus whichever execution providers were compiled in via the runner's
-            // `ep-*` features. Same model + parity gate as every other mode, so the
-            // EP numbers slot straight into the existing tables. On this Mac only
+            // `ep-*` features. This binary only *measures*; parity is gated by the
+            // `runner` parity binary, which picks up the same EP engines under the
+            // same `ep-*` features (and the embed-ort `ep_probe` example checks EP
+            // availability + parity directly). Same ONNX model as every mode, so
+            // the numbers slot into the existing tables. On this Mac only
             // `ep-xnnpack` / `ep-coreml` build; the rest build on their target box.
             engines.push(handle(OrtEngine::load(dir)?));
             #[cfg(feature = "ep-xnnpack")]

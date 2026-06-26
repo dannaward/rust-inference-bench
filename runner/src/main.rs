@@ -22,11 +22,27 @@ fn main() -> Result<()> {
     let corpus = load_corpus(&corpus_path)?;
     println!("Loaded {} sentences from {corpus_path}", corpus.len());
 
-    let engines: Vec<Box<dyn InferenceEngine>> = vec![
+    let mut engines: Vec<Box<dyn InferenceEngine>> = vec![
         Box::new(CandleEngine::load(&model_dir)?),
         Box::new(BurnEngine::load(&model_dir)?),
         Box::new(OrtEngine::load(&model_dir)?),
     ];
+    // ORT execution-provider variants (worklog 08): when built with an `ep-*`
+    // feature, the corresponding EP engine joins the parity check so its output
+    // is gated against the reference, not just measured for speed. Run e.g.
+    // `cargo run -p runner --features ep-xnnpack` to parity-check that EP.
+    #[cfg(feature = "ep-xnnpack")]
+    engines.push(Box::new(OrtEngine::load_xnnpack(&model_dir)?));
+    #[cfg(feature = "ep-coreml")]
+    engines.push(Box::new(OrtEngine::load_coreml(&model_dir)?));
+    #[cfg(feature = "ep-directml")]
+    engines.push(Box::new(OrtEngine::load_directml(&model_dir)?));
+    #[cfg(feature = "ep-openvino")]
+    engines.push(Box::new(OrtEngine::load_openvino(&model_dir)?));
+    #[cfg(feature = "ep-cuda")]
+    engines.push(Box::new(OrtEngine::load_cuda(&model_dir)?));
+    #[cfg(feature = "ep-nnapi")]
+    engines.push(Box::new(OrtEngine::load_nnapi(&model_dir)?));
 
     // Embed the whole corpus with each engine that is actually implemented.
     let mut outputs: Vec<(String, Vec<Embedding>)> = Vec::new();
