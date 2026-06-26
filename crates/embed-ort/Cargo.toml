@@ -9,6 +9,15 @@ authors.workspace = true
 # CoreML execution provider (GPU/ANE on macOS). Phase 2 GPU mode.
 coreml = ["ort/coreml"]
 
+# Cross-platform execution-provider matrix (worklog 08). Each maps to one ORT
+# execution provider. Only `xnnpack` (and `coreml`) build + run on this Mac; the
+# rest need their platform SDK and target hardware — see GUIDE-cross-platform.md.
+xnnpack = ["ort/xnnpack"]   # portable CPU/SIMD accelerator (ARM NEON + x86); builds on macOS
+directml = ["ort/directml"] # Intel / AMD / NVIDIA GPU on Windows (DirectX 12) — the iGPU/AMD gap
+openvino = ["ort/openvino"] # Intel CPU / iGPU / NPU; needs the OpenVINO toolkit installed
+cuda = ["ort/cuda"]         # NVIDIA GPU; needs the CUDA toolkit
+nnapi = ["ort/nnapi"]       # Android GPU / NPU; needs an Android NDK target
+
 [dependencies]
 embed-core.workspace = true
 anyhow.workspace = true

@@ -17,6 +17,11 @@
 //!
 //! Run pinned + on AC: `RAYON_NUM_THREADS=1 cargo run --release -p runner --bin bench`.
 //! GPU peers: `cargo run --release -p runner --bin bench --features gpu -- gpu`.
+//! ORT cross-platform EP matrix (worklog 08): build with one or more `ep-*`
+//! features and run `ep` mode, e.g.
+//!   `cargo run --release -p runner --bin bench --features ep-xnnpack -- ep`
+//! (Mac: ep-xnnpack / ep-coreml; other boxes: ep-directml / ep-openvino /
+//! ep-cuda / ep-nnapi — see GUIDE-cross-platform.md).
 
 use std::collections::BTreeMap;
 use std::process::Command;
@@ -376,10 +381,43 @@ fn print_summary(names: &[String], latency: &[LatencyRec], throughput: &[Through
     }
 }
 
+fn handle(engine: impl InferenceEngine + 'static) -> EngineHandle {
+    EngineHandle {
+        name: engine.name().to_string(),
+        engine: Box::new(engine),
+    }
+}
+
 fn load_engines(mode: &str) -> Result<Vec<EngineHandle>> {
     let dir = "data/models/all-MiniLM-L6-v2";
     let mut engines: Vec<EngineHandle> = Vec::new();
     match mode {
+        "ep" => {
+            // ORT-only cross-platform EP matrix (worklog 08): an ort-cpu baseline
+            // plus whichever execution providers were compiled in via the runner's
+            // `ep-*` features. Same model + parity gate as every other mode, so the
+            // EP numbers slot straight into the existing tables. On this Mac only
+            // `ep-xnnpack` / `ep-coreml` build; the rest build on their target box.
+            engines.push(handle(OrtEngine::load(dir)?));
+            #[cfg(feature = "ep-xnnpack")]
+            engines.push(handle(OrtEngine::load_xnnpack(dir)?));
+            #[cfg(feature = "ep-coreml")]
+            engines.push(handle(OrtEngine::load_coreml(dir)?));
+            #[cfg(feature = "ep-directml")]
+            engines.push(handle(OrtEngine::load_directml(dir)?));
+            #[cfg(feature = "ep-openvino")]
+            engines.push(handle(OrtEngine::load_openvino(dir)?));
+            #[cfg(feature = "ep-cuda")]
+            engines.push(handle(OrtEngine::load_cuda(dir)?));
+            #[cfg(feature = "ep-nnapi")]
+            engines.push(handle(OrtEngine::load_nnapi(dir)?));
+            if engines.len() == 1 {
+                anyhow::bail!(
+                    "ep mode: no execution-provider features enabled — build with \
+                     e.g. `--features ep-xnnpack` (see GUIDE-cross-platform.md)."
+                );
+            }
+        }
         "gpu" => {
             #[cfg(feature = "gpu")]
             {

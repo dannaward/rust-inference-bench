@@ -9,6 +9,19 @@
 //! Execution providers:
 //!   - default (CPU) — the desktop baseline, matched against candle-cpu / burn-ndarray.
 //!   - CoreML (feature `coreml`) — GPU/ANE on macOS, the Phase 2 GPU peer.
+//!
+//! Cross-platform EP matrix (worklog 08) — one constructor per ORT execution
+//! provider, each behind its own cargo feature so the crate still builds with
+//! none of the platform SDKs present:
+//!   - XNNPACK (`xnnpack`) — portable CPU/SIMD; the one extra EP we can build +
+//!     measure on this Mac.
+//!   - DirectML (`directml`) — Intel / AMD / NVIDIA GPU on Windows; the path that
+//!     covers the Intel-iGPU / AMD gap Candle has no answer for.
+//!   - OpenVINO (`openvino`) — Intel CPU / iGPU / NPU.
+//!   - CUDA (`cuda`) — NVIDIA GPU.
+//!   - NNAPI (`nnapi`) — Android GPU / NPU.
+//! All but XNNPACK/CoreML are written here but compiled + run on their target
+//! hardware only — see `GUIDE-cross-platform.md` for build/run instructions.
 
 use std::sync::Mutex;
 
@@ -52,6 +65,84 @@ impl OrtEngine {
                 .with_model_format(CoreMLModelFormat::MLProgram)
                 .with_compute_units(CoreMLComputeUnits::All)
                 .build()])
+                .map_err(Into::into)
+        })
+    }
+
+    /// Load on the XNNPACK execution provider — a portable, highly-optimized
+    /// CPU/SIMD kernel library (ARM NEON + x86 AVX). Builds and runs on this Mac,
+    /// so it is the one *cross-platform* EP we can measure locally (worklog 08).
+    #[cfg(feature = "xnnpack")]
+    pub fn load_xnnpack(model_dir: &str) -> Result<Self> {
+        use ort::execution_providers::XNNPACKExecutionProvider;
+        // error_on_failure: if the prebuilt ORT lacks XNNPACK, fail loudly rather
+        // than silently falling back to the CPU EP and reporting bogus "no gain".
+        Self::load_with("ort-xnnpack", model_dir, |b| {
+            b.with_execution_providers([XNNPACKExecutionProvider::default()
+                .build()
+                .error_on_failure()])
+                .map_err(Into::into)
+        })
+    }
+
+    /// Load on the DirectML execution provider — GPU acceleration for **Intel,
+    /// AMD, and NVIDIA** GPUs on Windows via DirectX 12. This is the EP that fills
+    /// the Intel-iGPU / AMD gap Candle has no backend for (worklog 06/08).
+    /// Windows-only; build on Windows with `--features directml`. DirectML also
+    /// requires sequential execution + no memory pattern — set on the session
+    /// builder here. See GUIDE-cross-platform.md.
+    #[cfg(feature = "directml")]
+    pub fn load_directml(model_dir: &str) -> Result<Self> {
+        use ort::execution_providers::DirectMLExecutionProvider;
+        Self::load_with("ort-directml", model_dir, |b| {
+            // DirectML is incompatible with parallel exec + memory pattern.
+            b.with_memory_pattern(false)?
+                .with_execution_providers([DirectMLExecutionProvider::default()
+                    .with_device_id(0)
+                    .build()
+                    .error_on_failure()])
+                .map_err(Into::into)
+        })
+    }
+
+    /// Load on the OpenVINO execution provider — Intel CPU / iGPU / NPU. Device
+    /// type selects the target: "GPU" (Intel iGPU), "CPU", "NPU", or "AUTO".
+    /// Needs the OpenVINO toolkit installed; build with `--features openvino`.
+    #[cfg(feature = "openvino")]
+    pub fn load_openvino(model_dir: &str) -> Result<Self> {
+        use ort::execution_providers::OpenVINOExecutionProvider;
+        Self::load_with("ort-openvino", model_dir, |b| {
+            b.with_execution_providers([OpenVINOExecutionProvider::default()
+                .with_device_type("GPU")
+                .build()
+                .error_on_failure()])
+                .map_err(Into::into)
+        })
+    }
+
+    /// Load on the CUDA execution provider — NVIDIA GPU. Needs the CUDA toolkit;
+    /// build with `--features cuda` on a CUDA host.
+    #[cfg(feature = "cuda")]
+    pub fn load_cuda(model_dir: &str) -> Result<Self> {
+        use ort::execution_providers::CUDAExecutionProvider;
+        Self::load_with("ort-cuda", model_dir, |b| {
+            b.with_execution_providers([CUDAExecutionProvider::default()
+                .with_device_id(0)
+                .build()
+                .error_on_failure()])
+                .map_err(Into::into)
+        })
+    }
+
+    /// Load on the NNAPI execution provider — Android GPU / NPU. Android target
+    /// only (cross-compile with the NDK); build with `--features nnapi`.
+    #[cfg(feature = "nnapi")]
+    pub fn load_nnapi(model_dir: &str) -> Result<Self> {
+        use ort::execution_providers::NNAPIExecutionProvider;
+        Self::load_with("ort-nnapi", model_dir, |b| {
+            b.with_execution_providers([NNAPIExecutionProvider::default()
+                .build()
+                .error_on_failure()])
                 .map_err(Into::into)
         })
     }

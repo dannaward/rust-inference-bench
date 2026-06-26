@@ -17,6 +17,16 @@ serde_json = "1"
 [features]
 gpu = ["embed-candle/metal", "embed-burn/wgpu", "embed-ort/coreml"]
 
+# Cross-platform ORT execution-provider matrix (worklog 08). Run `bench ep` with
+# one or more of these enabled; ort-cpu is always the baseline. Only ep-xnnpack
+# / ep-coreml build on this Mac — the rest build on their target platform.
+ep-xnnpack = ["embed-ort/xnnpack"]
+ep-coreml = ["embed-ort/coreml"]
+ep-directml = ["embed-ort/directml"]
+ep-openvino = ["embed-ort/openvino"]
+ep-cuda = ["embed-ort/cuda"]
+ep-nnapi = ["embed-ort/nnapi"]
+
 [dev-dependencies]
 criterion = "0.5"
 
