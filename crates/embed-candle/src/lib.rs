@@ -37,6 +37,12 @@ impl CandleEngine {
         Self::load_on(Device::new_metal(0)?, "candle-metal", model_dir)
     }
 
+    /// Load on the CUDA (GPU) backend. Cross-platform GPU peer (worklog 12).
+    #[cfg(feature = "cuda")]
+    pub fn load_cuda(model_dir: &str) -> Result<Self> {
+        Self::load_on(Device::new_cuda(0)?, "candle-cuda", model_dir)
+    }
+
     /// Load weights + tokenizer onto the given device. `model_dir` is currently
     /// unused: weights are fetched (and cached) from the HF Hub at the pinned
     /// revision so the benchmark is self-contained.

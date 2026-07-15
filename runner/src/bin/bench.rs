@@ -16,7 +16,10 @@
 //! exceeds run-to-run spread).
 //!
 //! Run pinned + on AC: `RAYON_NUM_THREADS=1 cargo run --release -p runner --bin bench`.
-//! GPU peers: `cargo run --release -p runner --bin bench --features gpu -- gpu`.
+//! GPU peers (bundle per platform): `--features gpu-macos` (Metal/CoreML),
+//! `--features gpu-cuda` (NVIDIA), or `--features gpu-wgpu` (portable), e.g.
+//! `cargo run --release -p runner --bin bench --features gpu-macos -- gpu`.
+//! run.sh auto-selects the bundle.
 //! ORT cross-platform EP matrix (worklog 08): build with one or more `ep-*`
 //! features and run `ep` mode, e.g.
 //!   `cargo run --release -p runner --bin bench --features ep-xnnpack -- ep`
@@ -29,7 +32,7 @@ use std::time::Instant;
 
 use anyhow::Result;
 use embed_burn::BurnEngine;
-#[cfg(feature = "gpu")]
+#[cfg(feature = "burn-wgpu")]
 use embed_burn::BurnWgpuEngine;
 use embed_candle::CandleEngine;
 use embed_core::InferenceEngine;
@@ -124,6 +127,13 @@ struct EngineHandle {
 
 fn main() -> Result<()> {
     let mode = std::env::args().nth(1).unwrap_or_else(|| "cpu".to_string());
+    // Trial count is overridable (run.sh `--trials N` -> BENCH_TRIALS) so a
+    // colleague can trade precision for wall-clock; defaults to TRIALS.
+    let trials = std::env::var("BENCH_TRIALS")
+        .ok()
+        .and_then(|s| s.parse::<usize>().ok())
+        .filter(|&n| n > 0)
+        .unwrap_or(TRIALS);
     let engines = load_engines(&mode)?;
     let names: Vec<String> = engines.iter().map(|e| e.name.clone()).collect();
     let e = engines.len();
@@ -150,8 +160,8 @@ fn main() -> Result<()> {
     let mut lat: Vec<Vec<Vec<f64>>> = vec![vec![vec![]; e]; inputs.len()];
     let mut thr: Vec<Vec<Vec<f64>>> = vec![vec![vec![]; e]; BATCH_SIZES.len()];
 
-    for trial in 0..TRIALS {
-        eprintln!("trial {}/{}", trial + 1, TRIALS);
+    for trial in 0..trials {
+        eprintln!("trial {}/{}", trial + 1, trials);
         // Rotate which engine goes first each trial to cancel order/drift bias.
         let order: Vec<usize> = (0..e).map(|k| (trial + k) % e).collect();
 
@@ -209,12 +219,12 @@ fn main() -> Result<()> {
     print_summary(&names, &latency, &throughput);
 
     let report = Report {
-        timestamp: cmd("date", &["-u", "+%Y-%m-%dT%H:%M:%SZ"]).unwrap_or_default(),
+        timestamp: cmd("date", &["-u", "+%Y-%m-%dT%H:%M:%SZ"]).unwrap_or_else(epoch_stamp),
         mode: mode.clone(),
         engines: names,
         environment: capture_env(),
         config: Config {
-            trials: TRIALS,
+            trials,
             latency_samples: LATENCY_SAMPLES,
             throughput_reps: THROUGHPUT_REPS,
             batch_sizes: BATCH_SIZES.to_vec(),
@@ -224,7 +234,7 @@ fn main() -> Result<()> {
     };
 
     std::fs::create_dir_all("results")?;
-    let stamp = cmd("date", &["-u", "+%Y%m%dT%H%M%SZ"]).unwrap_or_else(|| "run".to_string());
+    let stamp = cmd("date", &["-u", "+%Y%m%dT%H%M%SZ"]).unwrap_or_else(epoch_stamp);
     let host = cmd("hostname", &["-s"]).unwrap_or_else(|| "host".to_string());
     let path = format!("results/{mode}-{stamp}-{host}.json");
     std::fs::write(&path, serde_json::to_string_pretty(&report)?)?;
@@ -422,27 +432,27 @@ fn load_engines(mode: &str) -> Result<Vec<EngineHandle>> {
             }
         }
         "gpu" => {
-            #[cfg(feature = "gpu")]
-            {
-                let c = CandleEngine::load_metal(dir)?;
-                let b = BurnWgpuEngine::load_wgpu(dir)?;
-                let o = OrtEngine::load_coreml(dir)?;
-                engines.push(EngineHandle {
-                    name: c.name().to_string(),
-                    engine: Box::new(c),
-                });
-                engines.push(EngineHandle {
-                    name: b.name().to_string(),
-                    engine: Box::new(b),
-                });
-                engines.push(EngineHandle {
-                    name: o.name().to_string(),
-                    engine: Box::new(o),
-                });
-            }
-            #[cfg(not(feature = "gpu"))]
-            {
-                anyhow::bail!("rebuild with `--features gpu` to run GPU mode");
+            // Compose whichever GPU backends were compiled in (worklog 12): a
+            // macOS bundle gives Metal/wgpu/CoreML, a CUDA bundle gives
+            // CUDA/wgpu/CUDA, and `gpu-wgpu` alone gives the portable wgpu peer.
+            // Same per-feature pattern as `ep` mode below.
+            #[cfg(feature = "candle-metal")]
+            engines.push(handle(CandleEngine::load_metal(dir)?));
+            #[cfg(feature = "candle-cuda")]
+            engines.push(handle(CandleEngine::load_cuda(dir)?));
+            #[cfg(feature = "burn-wgpu")]
+            engines.push(handle(BurnWgpuEngine::load_wgpu(dir)?));
+            #[cfg(feature = "ort-coreml")]
+            engines.push(handle(OrtEngine::load_coreml(dir)?));
+            #[cfg(feature = "ort-cuda")]
+            engines.push(handle(OrtEngine::load_cuda(dir)?));
+            if engines.is_empty() {
+                anyhow::bail!(
+                    "gpu mode: no GPU backend compiled in — build with a bundle: \
+                     `--features gpu-macos` (Metal/CoreML), `--features gpu-cuda` \
+                     (NVIDIA), or `--features gpu-wgpu` (portable Vulkan/DX12). \
+                     run.sh selects one automatically."
+                );
             }
         }
         _ => {
@@ -471,11 +481,13 @@ fn load_engines(mode: &str) -> Result<Vec<EngineHandle>> {
 }
 
 fn capture_env() -> Environment {
+    // AC-power detection is best-effort and macOS-only (`pmset`); elsewhere it
+    // stays false and the plot subtitle simply omits the AC claim.
     let on_ac = cmd("pmset", &["-g", "batt"])
         .map(|s| s.contains("AC Power"))
         .unwrap_or(false);
     Environment {
-        cpu: cmd("sysctl", &["-n", "machdep.cpu.brand_string"]).unwrap_or_default(),
+        cpu: cpu_brand(),
         cores: std::thread::available_parallelism()
             .map(|n| n.get())
             .unwrap_or(0),
@@ -487,6 +499,36 @@ fn capture_env() -> Environment {
         burn_version: BURN_VERSION.to_string(),
         ort_version: ORT_VERSION.to_string(),
     }
+}
+
+/// Fallback timestamp for platforms without a `date` binary (e.g. Windows):
+/// Unix epoch seconds, so result filenames stay unique + sortable.
+fn epoch_stamp() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    format!("t{secs}")
+}
+
+/// CPU model string, cross-platform so results from any machine are labeled.
+/// macOS: `sysctl`; Linux: the `model name` line of `/proc/cpuinfo`; otherwise
+/// the target arch as a last resort.
+fn cpu_brand() -> String {
+    if let Some(s) = cmd("sysctl", &["-n", "machdep.cpu.brand_string"]) {
+        return s;
+    }
+    if let Ok(info) = std::fs::read_to_string("/proc/cpuinfo") {
+        if let Some(model) = info
+            .lines()
+            .find(|l| l.starts_with("model name"))
+            .and_then(|l| l.split(':').nth(1))
+        {
+            return model.trim().to_string();
+        }
+    }
+    std::env::consts::ARCH.to_string()
 }
 
 fn cmd(prog: &str, args: &[&str]) -> Option<String> {

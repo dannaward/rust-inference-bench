@@ -7,14 +7,28 @@ authors.workspace = true
 
 [features]
 wgpu = ["burn/wgpu"]
+# Opt-in system OpenBLAS CPU backend on non-macOS boxes. Off by default so no
+# system library is required; run.sh `--blas openblas` turns it on. macOS always
+# links Apple Accelerate via the target dependency below.
+openblas = ["burn/openblas-system"]
 
 [dependencies]
 embed-core.workspace = true
 anyhow.workspace = true
-burn = { version = "0.21", features = ["ndarray", "accelerate"] }
 burn-store = "0.21"
 tokenizers = "0.21"
 hf-hub = "0.4"
+
+# BLAS backend chosen per-OS so `cargo build` works everywhere with no flags:
+# macOS links Apple Accelerate; other platforms use Burn's pure-ndarray kernels
+# (enable `openblas` for a system BLAS). Replaces the previous unconditional
+# `accelerate` feature, which failed to build off macOS (worklog 12). Both OS
+# variants keep `ndarray` so the CPU backend type is identical everywhere.
+[target.'cfg(target_os = "macos")'.dependencies]
+burn = { version = "0.21", features = ["ndarray", "accelerate"] }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+burn = { version = "0.21", features = ["ndarray"] }
 
 [build-dependencies]
 burn-import = "0.21"

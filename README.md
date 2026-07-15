@@ -68,22 +68,55 @@ ORT from the identical ONNX export), so embeddings are numerically identical.
 
 ## Running
 
+### One command (any machine)
+
+```sh
+./run.sh
+```
+
+`run.sh` reproduces the whole pipeline — parity → CPU → GPU → footprint → plots —
+auto-detecting the OS, CPU BLAS backend, and GPU backend, and writing the same
+`results/*.json` + `results/plots/*.svg` we produced. It pins threads
+(`RAYON_NUM_THREADS=1`) and builds `--release` for every measured phase.
+
+```sh
+./run.sh --cpu-only            # skip GPU
+./run.sh --gpu cuda            # force a backend (auto|macos|cuda|wgpu|off)
+./run.sh --blas openblas       # opt-in CPU BLAS on Linux (auto|accelerate|mkl|openblas)
+./run.sh --trials 20           # more trials = tighter IQR
+./run.sh --no-footprint --no-plots
+```
+
+**Prerequisites:** Rust (`rustup`), `python3`, and `curl`/`wget`. ONNX Runtime is
+pulled prebuilt by the `ort` crate — no system install. GPU backends need their
+platform SDK/driver present at runtime (Metal on macOS, CUDA toolkit for
+`--gpu cuda`, a Vulkan driver for `--gpu wgpu`); if the chosen backend isn't
+available the GPU phase is skipped with a warning and CPU results still land.
+
+### Cross-platform notes
+
+- **CPU BLAS is auto-selected per OS:** macOS links Apple Accelerate; other
+  platforms default to the frameworks' built-in kernels so `cargo build` works
+  with no system BLAS. `--blas mkl` (Candle, Intel) / `--blas openblas` (Burn)
+  opt into a system BLAS symmetrically.
+- **GPU auto-detect:** macOS → Metal/CoreML; `nvidia-smi` present → CUDA;
+  `vulkaninfo` present → wgpu; otherwise the GPU phase is skipped.
+- **Windows:** run under WSL (treated as Linux) or Git-Bash. `run.sh` accepts
+  `python` or `python3`, handles the `.exe` suffix, and needs no Unix `date`.
+  Footprint measures cold start / binary / build; peak RSS is `n/a` (no portable
+  probe without `/usr/bin/time`). A GPU-less box auto-selects `--gpu off`.
+- For the ORT cross-platform execution-provider matrix (DirectML / OpenVINO /
+  NNAPI on non-Mac hardware) see [GUIDE-cross-platform.md](GUIDE-cross-platform.md).
+
+### Manual (individual phases)
+
 ```sh
 scripts/fetch-model.sh                     # one-time ONNX fetch for embed-burn build
-
-# Phase 0 parity
-cargo run -p runner --bin runner
-
-# CPU benchmark + plots
+cargo run -p runner --bin runner           # Phase 0 parity
 RAYON_NUM_THREADS=1 cargo run --release -p runner --bin bench cpu
+cargo run --release -p runner --bin bench --features gpu-macos -- gpu   # or gpu-cuda / gpu-wgpu
+RAYON_NUM_THREADS=1 scripts/secondary.sh   # footprint
 python3 scripts/plot.py results/cpu-*.json results/plots
-
-# GPU benchmark + plots
-cargo run --release -p runner --bin bench --features gpu -- gpu
-python3 scripts/plot.py results/gpu-*.json results/plots/gpu
-
-# Footprint (cold start / RSS / binary / build)
-RAYON_NUM_THREADS=1 scripts/secondary.sh
 ```
 
 ## Status

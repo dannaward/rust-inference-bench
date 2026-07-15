@@ -12,5 +12,12 @@ if [ -f "$DEST" ]; then
     exit 0
 fi
 echo "downloading $URL"
-curl -sL -o "$DEST" "$URL"
+if command -v curl >/dev/null 2>&1; then
+    curl -fSL -o "$DEST" "$URL"
+elif command -v wget >/dev/null 2>&1; then
+    wget -O "$DEST" "$URL"
+else
+    echo "error: need curl or wget to fetch the model" >&2
+    exit 1
+fi
 echo "saved to $DEST"
