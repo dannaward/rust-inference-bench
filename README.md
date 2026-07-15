@@ -4,7 +4,7 @@ A reproducible benchmark comparing Rust ML inference engines — **Candle**,
 **Burn**, and **ONNX Runtime** (`ort`) — on a sentence-embedding workload
 (`all-MiniLM-L6-v2`), to inform the NAHPU framework choice.
 
-**Recommendation: Candle** for the NAHPU desktop embedding workload — fastest
+**Recommendation: Candle** for the [NAHPU](https://github.com/nahpu) desktop embedding workload — fastest
 overall throughput (CPU + GPU), cold start, memory, and binary size. ORT's one
 edge is the lowest single-short-embed CPU latency. Full numbers in
 [REPORT.md](REPORT.md).
@@ -15,10 +15,10 @@ edge is the lowest single-short-embed CPU latency. Full numbers in
 ./run.sh          # parity → CPU → GPU → footprint → plots, auto-detecting the machine
 ```
 
-Needs Rust, `python3` (or `python`), and `curl`/`wget`. Results land in a
-per-machine folder under `results/<os>-<arch>-<cpu>/`. Common flags:
-`--cpu-only`, `--gpu auto|macos|cuda|wgpu|off`, `--blas auto|mkl|openblas`,
-`--trials N`.
+Needs Rust, `python3` (or `python`), and `curl`/`wget`.  
+Results land in a per-machine folder under `results/<os>-<arch>-<cpu>/`. 
+
+Common flags: `--cpu-only`, `--gpu auto|macos|cuda|wgpu|off`, `--blas auto|mkl|openblas`, `--trials N`.
 
 ## Documentation
 
