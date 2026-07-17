@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="380" font-family="sans-serif" font-size="13">
+<rect width="760" height="380" fill="white"/>
+<text x="380.0" y="22" text-anchor="middle" font-size="15" font-weight="bold">Throughput (higher is better) — aarch64, 1 thread, AC — 10 trials (median, IQR whiskers)</text>
+<line x1="70" y1="320" x2="740" y2="320" stroke="#333"/>
+<line x1="70" y1="320" x2="70" y2="40" stroke="#333"/>
+<line x1="70" y1="320.0" x2="740" y2="320.0" stroke="#eee"/>
+<text x="62" y="324.0" text-anchor="end" fill="#555">0</text>
+<line x1="70" y1="264.0" x2="740" y2="264.0" stroke="#eee"/>
+<text x="62" y="268.0" text-anchor="end" fill="#555">10</text>
+<line x1="70" y1="208.0" x2="740" y2="208.0" stroke="#eee"/>
+<text x="62" y="212.0" text-anchor="end" fill="#555">19</text>
+<line x1="70" y1="152.0" x2="740" y2="152.0" stroke="#eee"/>
+<text x="62" y="156.0" text-anchor="end" fill="#555">29</text>
+<line x1="70" y1="96.0" x2="740" y2="96.0" stroke="#eee"/>
+<text x="62" y="100.0" text-anchor="end" fill="#555">39</text>
+<line x1="70" y1="40.0" x2="740" y2="40.0" stroke="#eee"/>
+<text x="62" y="44.0" text-anchor="end" fill="#555">48</text>
+<text x="18" y="180" text-anchor="middle" fill="#555" transform="rotate(-90 18 180)">sentences / sec</text>
+<text x="137.0" y="340" text-anchor="middle" fill="#555">b=1</text>
+<text x="271.0" y="340" text-anchor="middle" fill="#555">b=8</text>
+<text x="405.0" y="340" text-anchor="middle" fill="#555">b=16</text>
+<text x="539.0" y="340" text-anchor="middle" fill="#555">b=32</text>
+<text x="673.0" y="340" text-anchor="middle" fill="#555">b=64</text>
+<circle cx="137.0" cy="184.4" r="3" fill="#2c7fb8"/>
+<circle cx="271.0" cy="86.7" r="3" fill="#2c7fb8"/>
+<circle cx="405.0" cy="117.3" r="3" fill="#2c7fb8"/>
+<circle cx="539.0" cy="115.1" r="3" fill="#2c7fb8"/>
+<circle cx="673.0" cy="118.4" r="3" fill="#2c7fb8"/>
+<polyline points="137.0,184.4 271.0,86.7 405.0,117.3 539.0,115.1 673.0,118.4" fill="none" stroke="#2c7fb8" stroke-width="2"/>
+<circle cx="137.0" cy="181.0" r="3" fill="#de8a26"/>
+<circle cx="271.0" cy="134.7" r="3" fill="#de8a26"/>
+<circle cx="405.0" cy="159.2" r="3" fill="#de8a26"/>
+<circle cx="539.0" cy="150.9" r="3" fill="#de8a26"/>
+<circle cx="673.0" cy="155.7" r="3" fill="#de8a26"/>
+<polyline points="137.0,181.0 271.0,134.7 405.0,159.2 539.0,150.9 673.0,155.7" fill="none" stroke="#de8a26" stroke-width="2"/>
+<rect x="70" y="36" width="12" height="12" fill="#2c7fb8"/><text x="86" y="47">candle-cpu</text><rect x="200" y="36" width="12" height="12" fill="#de8a26"/><text x="216" y="47">burn-ndarray</text>
+</svg>
