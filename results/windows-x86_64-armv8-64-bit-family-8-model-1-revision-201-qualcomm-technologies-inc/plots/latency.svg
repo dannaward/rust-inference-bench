@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="380" font-family="sans-serif" font-size="13">
+<rect width="760" height="380" fill="white"/>
+<text x="380.0" y="22" text-anchor="middle" font-size="15" font-weight="bold">Latency (lower is better) — aarch64, 1 thread, AC — 10 trials (median, IQR whiskers)</text>
+<line x1="70" y1="320" x2="740" y2="320" stroke="#333"/>
+<line x1="70" y1="320" x2="70" y2="40" stroke="#333"/>
+<line x1="70" y1="320.0" x2="740" y2="320.0" stroke="#eee"/>
+<text x="62" y="324.0" text-anchor="end" fill="#555">0</text>
+<line x1="70" y1="264.0" x2="740" y2="264.0" stroke="#eee"/>
+<text x="62" y="268.0" text-anchor="end" fill="#555">34</text>
+<line x1="70" y1="208.0" x2="740" y2="208.0" stroke="#eee"/>
+<text x="62" y="212.0" text-anchor="end" fill="#555">67</text>
+<line x1="70" y1="152.0" x2="740" y2="152.0" stroke="#eee"/>
+<text x="62" y="156.0" text-anchor="end" fill="#555">101</text>
+<line x1="70" y1="96.0" x2="740" y2="96.0" stroke="#eee"/>
+<text x="62" y="100.0" text-anchor="end" fill="#555">134</text>
+<line x1="70" y1="40.0" x2="740" y2="40.0" stroke="#eee"/>
+<text x="62" y="44.0" text-anchor="end" fill="#555">168</text>
+<text x="18" y="180" text-anchor="middle" fill="#555" transform="rotate(-90 18 180)">p50 latency (ms)</text>
+<text x="181.7" y="340" text-anchor="middle" fill="#555">short</text>
+<text x="405.0" y="340" text-anchor="middle" fill="#555">medium</text>
+<text x="628.3" y="340" text-anchor="middle" fill="#555">long</text>
+<rect x="92.3" y="272.4" width="89.3" height="47.6" fill="#2c7fb8"/>
+<line x1="137.0" y1="299.4" x2="137.0" y2="272.2" stroke="#333"/>
+<rect x="181.7" y="272.4" width="89.3" height="47.6" fill="#de8a26"/>
+<line x1="226.3" y1="284.9" x2="226.3" y2="271.6" stroke="#333"/>
+<rect x="315.7" y="247.5" width="89.3" height="72.5" fill="#2c7fb8"/>
+<line x1="360.3" y1="282.7" x2="360.3" y2="243.4" stroke="#333"/>
+<rect x="405.0" y="248.6" width="89.3" height="71.4" fill="#de8a26"/>
+<line x1="449.7" y1="277.5" x2="449.7" y2="247.9" stroke="#333"/>
+<rect x="539.0" y="80.0" width="89.3" height="240.0" fill="#2c7fb8"/>
+<line x1="583.7" y1="188.4" x2="583.7" y2="76.5" stroke="#333"/>
+<rect x="628.3" y="121.2" width="89.3" height="198.8" fill="#de8a26"/>
+<line x1="673.0" y1="215.9" x2="673.0" y2="111.0" stroke="#333"/>
+<rect x="70" y="36" width="12" height="12" fill="#2c7fb8"/><text x="86" y="47">candle-cpu</text><rect x="200" y="36" width="12" height="12" fill="#de8a26"/><text x="216" y="47">burn-ndarray</text>
+</svg>

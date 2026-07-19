@@ -1,0 +1,35 @@
+{
+  "environment": {
+    "cpu": "Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Oryon(TM) CPU",
+    "os": "Windows ARM64",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "rayon_threads": "1",
+    "on_ac_power": false
+  },
+  "cold_start_ms": {
+    "candle-cpu": {
+      "median": 210.4,
+      "min": 107.6
+    },
+    "burn-ndarray": {
+      "median": 217.9,
+      "min": 188.7
+    }
+  },
+  "peak_rss_mb": {
+    "candle-cpu": {
+      "median": null
+    },
+    "burn-ndarray": {
+      "median": null
+    }
+  },
+  "binary_size_mb": {
+    "candle-cpu": 7.3,
+    "burn-ndarray": 10.4
+  },
+  "clean_build_s": {
+    "candle-cpu": 377.4,
+    "burn-ndarray": 739.5
+  }
+}

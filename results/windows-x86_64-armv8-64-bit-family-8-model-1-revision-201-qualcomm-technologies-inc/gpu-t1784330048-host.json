@@ -1,0 +1,318 @@
+{
+  "timestamp": "t1784330048",
+  "mode": "gpu",
+  "engines": [
+    "candle-cpu",
+    "burn-wgpu"
+  ],
+  "environment": {
+    "cpu": "aarch64",
+    "cores": 12,
+    "os": "windows aarch64",
+    "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "rayon_threads": "1",
+    "on_ac_power": false,
+    "candle_version": "0.9",
+    "burn_version": "0.21",
+    "ort_version": "none"
+  },
+  "config": {
+    "trials": 10,
+    "latency_samples": 80,
+    "throughput_reps": 10,
+    "batch_sizes": [
+      1,
+      8,
+      16,
+      32,
+      64
+    ]
+  },
+  "latency": [
+    {
+      "seq_label": "short",
+      "approx_tokens": 3,
+      "ms": {
+        "burn-wgpu": {
+          "median": 239.6193,
+          "p25": 238.8041,
+          "p75": 242.409825,
+          "iqr": 3.6057250000000067,
+          "n": 10
+        },
+        "candle-cpu": {
+          "median": 30.459875,
+          "p25": 29.291712500000003,
+          "p75": 31.10105,
+          "iqr": 1.809337499999998,
+          "n": 10
+        }
+      },
+      "fastest": "candle-cpu",
+      "pairwise": [
+        {
+          "a": "candle-cpu",
+          "b": "burn-wgpu",
+          "speedup_x": {
+            "median": 7.894144951384757,
+            "p25": 7.6926806792280065,
+            "p75": 8.271597358440085,
+            "iqr": 0.5789166792120781,
+            "n": 10
+          },
+          "distinguishable": true,
+          "faster": "candle-cpu"
+        }
+      ]
+    },
+    {
+      "seq_label": "medium",
+      "approx_tokens": 10,
+      "ms": {
+        "burn-wgpu": {
+          "median": 238.730375,
+          "p25": 237.79262500000002,
+          "p75": 239.8355375,
+          "iqr": 2.0429124999999715,
+          "n": 10
+        },
+        "candle-cpu": {
+          "median": 43.9353,
+          "p25": 43.1919625,
+          "p75": 46.507925,
+          "iqr": 3.3159624999999977,
+          "n": 10
+        }
+      },
+      "fastest": "candle-cpu",
+      "pairwise": [
+        {
+          "a": "candle-cpu",
+          "b": "burn-wgpu",
+          "speedup_x": {
+            "median": 5.395279590805451,
+            "p25": 5.152556107990375,
+            "p75": 5.519173384876785,
+            "iqr": 0.36661727688641044,
+            "n": 10
+          },
+          "distinguishable": true,
+          "faster": "candle-cpu"
+        }
+      ]
+    },
+    {
+      "seq_label": "long",
+      "approx_tokens": 52,
+      "ms": {
+        "burn-wgpu": {
+          "median": 254.03215,
+          "p25": 253.17795,
+          "p75": 255.11170000000004,
+          "iqr": 1.9337500000000318,
+          "n": 10
+        },
+        "candle-cpu": {
+          "median": 148.676175,
+          "p25": 148.02055000000001,
+          "p75": 156.0461125,
+          "iqr": 8.025562499999978,
+          "n": 10
+        }
+      },
+      "fastest": "candle-cpu",
+      "pairwise": [
+        {
+          "a": "candle-cpu",
+          "b": "burn-wgpu",
+          "speedup_x": {
+            "median": 1.705646015902592,
+            "p25": 1.6429273150582002,
+            "p75": 1.7176899467600735,
+            "iqr": 0.07476263170187325,
+            "n": 10
+          },
+          "distinguishable": true,
+          "faster": "candle-cpu"
+        }
+      ]
+    }
+  ],
+  "throughput": [
+    {
+      "batch": 1,
+      "sps": {
+        "burn-wgpu": {
+          "median": 4.127797794903833,
+          "p25": 4.098980272043672,
+          "p75": 4.204332144628905,
+          "iqr": 0.10535187258523315,
+          "n": 10
+        },
+        "candle-cpu": {
+          "median": 22.622502583254843,
+          "p25": 21.53703626267289,
+          "p75": 23.490869022636588,
+          "iqr": 1.9538327599636993,
+          "n": 10
+        }
+      },
+      "fastest": "candle-cpu",
+      "pairwise": [
+        {
+          "a": "candle-cpu",
+          "b": "burn-wgpu",
+          "speedup_x": {
+            "median": 5.373745597158558,
+            "p25": 5.235998415407094,
+            "p75": 5.631067454737225,
+            "iqr": 0.3950690393301306,
+            "n": 10
+          },
+          "distinguishable": true,
+          "faster": "candle-cpu"
+        }
+      ]
+    },
+    {
+      "batch": 8,
+      "sps": {
+        "burn-wgpu": {
+          "median": 8.20841523294046,
+          "p25": 8.176060893333716,
+          "p75": 8.230927220884755,
+          "iqr": 0.05486632755103926,
+          "n": 10
+        },
+        "candle-cpu": {
+          "median": 35.00000611025044,
+          "p25": 34.765274076570016,
+          "p75": 37.222677504041755,
+          "iqr": 2.457403427471739,
+          "n": 10
+        }
+      },
+      "fastest": "candle-cpu",
+      "pairwise": [
+        {
+          "a": "candle-cpu",
+          "b": "burn-wgpu",
+          "speedup_x": {
+            "median": 4.277193945986271,
+            "p25": 4.25055472032933,
+            "p75": 4.521008334437514,
+            "iqr": 0.2704536141081846,
+            "n": 10
+          },
+          "distinguishable": true,
+          "faster": "candle-cpu"
+        }
+      ]
+    },
+    {
+      "batch": 16,
+      "sps": {
+        "burn-wgpu": {
+          "median": 8.119884462616579,
+          "p25": 8.073264627806516,
+          "p75": 8.136507556362961,
+          "iqr": 0.06324292855644487,
+          "n": 10
+        },
+        "candle-cpu": {
+          "median": 33.57053410336202,
+          "p25": 32.58383693101799,
+          "p75": 34.877424040715944,
+          "iqr": 2.2935871096979525,
+          "n": 10
+        }
+      },
+      "fastest": "candle-cpu",
+      "pairwise": [
+        {
+          "a": "candle-cpu",
+          "b": "burn-wgpu",
+          "speedup_x": {
+            "median": 4.125038183273426,
+            "p25": 4.02542382774804,
+            "p75": 4.30211003462105,
+            "iqr": 0.27668620687301004,
+            "n": 10
+          },
+          "distinguishable": true,
+          "faster": "candle-cpu"
+        }
+      ]
+    },
+    {
+      "batch": 32,
+      "sps": {
+        "burn-wgpu": {
+          "median": 8.154283010789609,
+          "p25": 8.131202838282945,
+          "p75": 8.165005872591022,
+          "iqr": 0.03380303430807707,
+          "n": 10
+        },
+        "candle-cpu": {
+          "median": 34.372247961186766,
+          "p25": 32.9373404072762,
+          "p75": 35.314696804337245,
+          "iqr": 2.3773563970610425,
+          "n": 10
+        }
+      },
+      "fastest": "candle-cpu",
+      "pairwise": [
+        {
+          "a": "candle-cpu",
+          "b": "burn-wgpu",
+          "speedup_x": {
+            "median": 4.20559809213276,
+            "p25": 4.0425723764503365,
+            "p75": 4.336260155974559,
+            "iqr": 0.2936877795242223,
+            "n": 10
+          },
+          "distinguishable": true,
+          "faster": "candle-cpu"
+        }
+      ]
+    },
+    {
+      "batch": 64,
+      "sps": {
+        "burn-wgpu": {
+          "median": 8.130324511573743,
+          "p25": 8.123036260060077,
+          "p75": 8.148401742099768,
+          "iqr": 0.02536548203969069,
+          "n": 10
+        },
+        "candle-cpu": {
+          "median": 34.29412220461593,
+          "p25": 33.53664975582866,
+          "p75": 34.797200736884555,
+          "iqr": 1.2605509810558928,
+          "n": 10
+        }
+      },
+      "fastest": "candle-cpu",
+      "pairwise": [
+        {
+          "a": "candle-cpu",
+          "b": "burn-wgpu",
+          "speedup_x": {
+            "median": 4.221299680210633,
+            "p25": 4.121887936121422,
+            "p75": 4.264932548087895,
+            "iqr": 0.14304461196647278,
+            "n": 10
+          },
+          "distinguishable": true,
+          "faster": "candle-cpu"
+        }
+      ]
+    }
+  ]
+}
